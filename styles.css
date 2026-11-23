@@ -45,6 +45,9 @@ header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1
 .brand b{color:var(--primary);font-weight:800}
 .topr{display:flex;align-items:center;gap:10px;min-width:0}
 .topr #status{text-align:right}
+.viewbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:99px;border:2px solid var(--primary);background:var(--soft);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer;flex:none}
+.viewbtn[hidden]{display:none}
+.viewbtn svg{width:18px;height:18px;color:var(--primary)}
 .iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
 .iconbtn svg{width:20px;height:20px}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:4px 4px calc(6px + env(safe-area-inset-bottom,0px))}

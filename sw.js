@@ -1,5 +1,5 @@
 // Service worker: l'app si apre anche senza rete (il diario si invia appena torna).
-const CACHE = "fisiolog-v1";
+const CACHE = "fisiolog-v2";
 const SHELL = ["/", "/index.html", "/styles.css", "/app.js", "/config.js", "/manifest.webmanifest",
   "/logo.svg", "/logo-animated.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/icons/favicon-32.png"];
 

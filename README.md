@@ -16,6 +16,7 @@ Il fisioterapista prepara una libreria di esercizi con spiegazione e video e li 
 | `styles.css` | Stile, tema giorno e notte |
 | `config.js` | Indirizzo e chiave pubblica di Supabase (**da compilare**) |
 | `supabase.sql` | Tabelle, permessi e archivio video (da eseguire una volta su Supabase) |
+| `aggiornamento-admin.sql` | Aggiunge l'utente admin a un database già installato |
 | `sw.js`, `manifest.webmanifest` | Installazione come app e apertura senza rete |
 | `logo.svg`, `logo-animated.svg`, `icons/` | Logo e icone |
 | `privacy.html` | Modello di informativa privacy (**da completare**) |
@@ -87,8 +88,25 @@ Il fisioterapista prepara una libreria di esercizi con spiegazione e video e li 
 
 ---
 
+## Utente admin
+L'admin è un account che è insieme **fisioterapista** e **paziente di se stesso**. In alto ha un pulsante (Fisio / Paziente) per passare da una vista all'altra; lo stesso comando è anche in Profilo. Serve per preparare gli esercizi e provarli come li vedrà il paziente, con un solo account.
+
+1. Registrati nell'app con la tua email (ruolo indifferente) e conferma l'email.
+2. In Supabase › **SQL Editor** esegui, con la tua email:
+   ```sql
+   select public.make_admin('tua@email.it');
+   ```
+3. Ricarica l'app. Nell'elenco pazienti ci sei anche tu, segnato "(tu)": assegnati gli esercizi, poi passa alla vista Paziente.
+
+L'admin si attiva solo dal SQL Editor: dall'app nessuno può diventarlo. Per toglierlo:
+`update public.profiles set is_admin = false where email = 'tua@email.it';`
+
+> Se avevi già eseguito `supabase.sql` prima che esistesse l'admin, esegui una volta `aggiornamento-admin.sql`.
+
+---
+
 ## Note utili
-- **Nuova versione**: quando pubblichi modifiche, cambia il numero in `sw.js` (`fisiolog-v1` → `fisiolog-v2`). Così i telefoni scaricano subito i file aggiornati.
+- **Nuova versione**: quando pubblichi modifiche, aumenta il numero in `sw.js` (oggi è `fisiolog-v2`). Così i telefoni scaricano subito i file aggiornati.
 - **Video**: il limite di 50 MB a file è quello del piano gratuito di Supabase. Per video lunghi conviene un link YouTube **non in elenco**. Dall'iPhone, per avere la massima compatibilità anche su Android, imposta *Impostazioni › Fotocamera › Formati › Più compatibile*.
 - **Spazio**: il piano gratuito di Supabase include 1 GB di archivio file. È il primo limite che incontrerai se carichi molti video.
 - **Privacy**: completa `privacy.html` e falla verificare da un consulente prima di usare l'app con pazienti reali. L'app già offre consenso esplicito alla registrazione, scollegamento dal fisio, download dei dati ed eliminazione dell'account.

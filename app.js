@@ -202,11 +202,23 @@ function hydrateVideos() {
   });
 }
 
+/* ---------- Vista (solo admin: fisioterapista o paziente) ---------- */
+const VIEW_KEY = "fisiolog-view";
+let VIEW = "physio"; try { VIEW = localStorage.getItem(VIEW_KEY) === "patient" ? "patient" : "physio"; } catch (e) {}
+const roleOf = me => me && me.is_admin ? VIEW : me && me.role;
+function switchView(v) {
+  VIEW = v === "patient" ? "patient" : "physio"; try { localStorage.setItem(VIEW_KEY, VIEW); } catch (e) {}
+  ASG = null; EXD = null; VISIT = null; for (const k in LOGD) delete LOGD[k];
+  resetData(); loadCache();
+  if (location.hash.replace(/^#\/?/, "")) location.hash = "#/"; else render();
+  refresh(); toast(VIEW === "patient" ? "Vista paziente" : "Vista fisioterapista");
+}
+
 /* ---------- Stato, copia locale e invii in attesa ---------- */
 const S = { ready: false, me: null, physio: null, patients: [], exercises: [], assignments: [], logs: [], visits: [] };
 let LOADERR = null, NET = "ok", RECOVERY = false;
 function resetData() { Object.assign(S, { ready: false, me: null, physio: null, patients: [], exercises: [], assignments: [], logs: [], visits: [] }); LOADERR = null; }
-const cacheKey = () => "fisiolog-cache-" + (AUTH && AUTH.user.id);
+const cacheKey = () => "fisiolog-cache-" + (AUTH && AUTH.user.id) + "-" + VIEW;
 function saveCache() { try { const { ready, ...d } = S; localStorage.setItem(cacheKey(), JSON.stringify(d)); } catch (e) {} }
 function loadCache() { try { const d = JSON.parse(localStorage.getItem(cacheKey()) || "null"); if (d && d.me) { Object.assign(S, d); S.ready = true; } } catch (e) {} }
 const obKey = () => "fisiolog-outbox-" + (AUTH && AUTH.user.id);
@@ -233,7 +245,7 @@ async function load() {
   const me = (await sbFetch(`/rest/v1/profiles?id=eq.${uid}&select=*`))[0];
   if (!me) throw Object.assign(new Error("Profilo non trovato"), { noProfile: true });
   const since = addDays(today(), -90);
-  if (me.role === "patient") {
+  if (roleOf(me) === "patient") {
     const from = new Date(Date.now() - 4 * 3600e3).toISOString();
     const [ph, as, lg, vs] = await Promise.all([
       me.physio_id ? sbFetch(`/rest/v1/profiles?id=eq.${me.physio_id}&select=id,full_name,email`) : [],
@@ -361,7 +373,7 @@ function render() {
   if (RECOVERY && AUTH) { nav.innerHTML = ""; app.innerHTML = viewNewPassword(); return; }
   if (!AUTH) { nav.innerHTML = ""; app.innerHTML = viewGate(); return; }
   if (!S.ready) { nav.innerHTML = ""; app.innerHTML = LOADERR ? viewLoadError() : `<div class="loading">Caricamento…</div>`; return; }
-  const r = route(), role = S.me.role;
+  const r = route(), role = roleOf(S.me);
   if (role === "patient" && !S.me.physio_id) {
     nav.innerHTML = ""; app.innerHTML = r[0] === "profilo" ? viewProfile() : viewLink(); return;
   }
@@ -382,7 +394,18 @@ function render() {
   app.innerHTML = html;
   hydrateVideos();
 }
+function paintViewBtn() {
+  const b = document.getElementById("viewBtn"); if (!b) return;
+  const on = !!(AUTH && S.ready && S.me && S.me.is_admin && !RECOVERY);
+  b.hidden = !on; if (!on) return;
+  const pat = VIEW === "patient";
+  b.dataset.v = pat ? "physio" : "patient";
+  b.innerHTML = `${pat ? I.user : I.users}<span>${pat ? "Paziente" : "Fisio"}</span>`;
+  b.setAttribute("aria-label", `Vista ${pat ? "paziente" : "fisioterapista"}: passa alla vista ${pat ? "fisioterapista" : "paziente"}`);
+  b.title = b.getAttribute("aria-label");
+}
 function paintStatus() {
+  paintViewBtn();
   const el = document.getElementById("status"); if (!el) return;
   const n = AUTH && SB ? outbox().length : 0;
   el.textContent = n ? `${n} ${n === 1 ? "registrazione" : "registrazioni"} da inviare` : NET === "offline" ? "Offline" : NET === "sync" ? "Aggiorno…" : NET === "error" ? "Aggiornamento non riuscito" : "";
@@ -561,9 +584,12 @@ function viewDiary() {
    VISTE: profilo (entrambi i ruoli)
    ===================================================================== */
 function viewProfile() {
-  const me = S.me, ph = me.role === "physio", th = document.documentElement.dataset.theme || "auto";
-  return `<div class="pagehead"><div><h1>Profilo</h1><p>${esc(me.email || "")} · ${ph ? "Fisioterapista" : "Paziente"}</p></div></div>
+  const me = S.me, ph = roleOf(me) === "physio", th = document.documentElement.dataset.theme || "auto";
+  return `<div class="pagehead"><div><h1>Profilo</h1><p>${esc(me.email || "")} · ${me.is_admin ? "Admin · vista " + (ph ? "fisioterapista" : "paziente") : ph ? "Fisioterapista" : "Paziente"}</p></div></div>
   <div class="stack">
+    ${me.is_admin ? `<section class="card soft stack"><h2 style="margin:0">Admin</h2>
+      <p class="small" style="margin:0">Il tuo account è fisioterapista e anche paziente di se stesso: assegnati un esercizio dalla scheda “${esc(me.full_name || "tu")} (tu)” e provalo dalla vista paziente.</p>
+      <div class="seg" role="group" aria-label="Vista"><button data-act="switchView" data-v="physio" aria-pressed="${VIEW === "physio"}">Fisioterapista</button><button data-act="switchView" data-v="patient" aria-pressed="${VIEW === "patient"}">Paziente</button></div></section>` : ""}
     <form id="nameForm" class="card stack"><h2 style="margin:0">I tuoi dati</h2>
       <label class="f">Nome e cognome<input type="text" id="pName" maxlength="80" value="${esc(me.full_name)}" autocomplete="name"></label>
       <div class="row end"><button class="btn primary" type="submit">Salva</button></div></form>
@@ -596,7 +622,7 @@ function viewPatients() {
     <section class="codebox"><div><div class="small">Codice studio da dare ai pazienti</div><div class="code">${esc(S.me.code || "—")}</div><div class="small" style="opacity:.85">Il paziente si registra e lo inserisce: da quel momento lo trovi qui.</div></div>
       <div class="row"><button class="btn" data-act="copyCode">${I.copy}Copia</button>${navigator.share ? `<button class="btn" data-act="shareCode">${I.share}Invia</button>` : ""}</div></section>
     ${rows.length ? `<div class="plist">${rows.map(({ p, st, v }) => `<a class="pcard" href="#/paziente/${esc(p.id)}">
-      <div class="row" style="flex-wrap:nowrap"><span class="avatar">${esc(initials(p.full_name))}</span><div class="grow"><div class="nm">${esc(p.full_name || p.email)}</div><div class="tiny muted">${v ? "Seduta " + esc(dateTime(v.at)) : "Nessuna seduta fissata"}</div></div>
+      <div class="row" style="flex-wrap:nowrap"><span class="avatar">${esc(initials(p.full_name))}</span><div class="grow"><div class="nm">${esc(p.full_name || p.email)}${p.id === S.me.id ? ` <span class="tiny muted">(tu)</span>` : ""}</div><div class="tiny muted">${v ? "Seduta " + esc(dateTime(v.at)) : "Nessuna seduta fissata"}</div></div>
         ${st.alerts.length ? `<span class="chip warn">${st.alerts.length === 1 ? "1 avviso" : st.alerts.length + " avvisi"}</span>` : ""}</div>
       <div class="kv"><div><b>${st.adh === null ? "–" : st.adh + "%"}</b><span>Costanza 7 gg</span></div><div><b>${st.pain7 === null ? "–" : dec(st.pain7)}</b><span>Dolore medio</span></div><div><b>${esc(st.last ? ago(st.last.date) : "—")}</b><span>Ultima volta</span></div></div>
       ${st.as.length ? "" : `<span class="small" style="color:var(--primary);font-weight:600">Assegna il primo esercizio →</span>`}</a>`).join("")}</div>`
@@ -818,6 +844,8 @@ document.addEventListener("click", async e => {
   if (a === "delLog") { if (!confirm("Eliminare questa registrazione? Sparisce anche dal diario del fisioterapista.")) return;
     try { await sbFetch(`/rest/v1/logs?id=eq.${b.dataset.id}`, { method: "DELETE" }); } catch (err) { if (!outbox().some(o => o.id === b.dataset.id)) return toast(err.offline ? "Sei offline: riprova quando sei connesso" : "Non eliminata: " + err.message); }
     setOutbox(outbox().filter(o => o.id !== b.dataset.id)); S.logs = S.logs.filter(l => l.id !== b.dataset.id); saveCache(); render(); toast("Registrazione eliminata"); return; }
+  // --- vista admin
+  if (a === "switchView") { if (S.me && S.me.is_admin && b.dataset.v !== VIEW) switchView(b.dataset.v); return; }
   // --- profilo
   if (a === "theme") { setTheme(b.dataset.v); render(); return; }
   if (a === "copyCode") { try { await navigator.clipboard.writeText(S.me.code); toast("Codice copiato"); } catch (err) { toast("Codice: " + S.me.code); } return; }
@@ -831,7 +859,10 @@ document.addEventListener("click", async e => {
     if (!confirm("Eliminare l’account? Tutti i tuoi dati verranno cancellati e non si possono recuperare.")) return;
     if (prompt("Per confermare scrivi ELIMINA") !== "ELIMINA") return;
     try {
-      if (S.me.role === "physio") for (const ex of S.exercises) if (ex.video_path) await deleteVideo(ex.video_path);
+      if (S.me.role === "physio") {
+        const exs = S.exercises.length ? S.exercises : await sbFetch(`/rest/v1/exercises?physio_id=eq.${S.me.id}&select=video_path`).catch(() => []);
+        for (const ex of exs) if (ex.video_path) await deleteVideo(ex.video_path);
+      }
       await sbFetch("/rest/v1/rpc/delete_my_account", { method: "POST", body: {} });
       try { localStorage.removeItem(cacheKey()); localStorage.removeItem(obKey()); } catch (err) {}
       setAuth(null); resetData(); go(""); render(); toast("Account eliminato");

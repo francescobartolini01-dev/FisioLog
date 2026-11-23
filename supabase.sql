@@ -24,6 +24,9 @@ create table if not exists public.profiles (
   created_at  timestamptz not null default now()
 );
 create index if not exists profiles_physio_idx on public.profiles(physio_id);
+-- Admin: è fisioterapista e paziente di se stesso, e nell'app passa da una vista all'altra.
+-- Si attiva solo da qui (SQL Editor) con: select public.make_admin('tua@email.it');
+alter table public.profiles add column if not exists is_admin boolean not null default false;
 
 -- Il profilo nasce da solo alla registrazione, con i dati scelti nel modulo.
 create or replace function public.handle_new_user() returns trigger
@@ -210,7 +213,7 @@ begin
   if auth.uid() is null then raise exception 'Accesso richiesto'; end if;
   select * into ph from public.profiles where code = upper(trim(p_code)) and role = 'physio';
   if not found then raise exception 'Codice studio non valido'; end if;
-  update public.profiles set physio_id = ph.id where id = auth.uid() and role = 'patient';
+  update public.profiles set physio_id = ph.id where id = auth.uid() and (role = 'patient' or is_admin);
   if not found then raise exception 'Solo un account paziente può collegarsi a un fisioterapista'; end if;
   return json_build_object('id', ph.id, 'full_name', ph.full_name);
 end $$;
@@ -239,6 +242,27 @@ revoke execute on function public.link_physio(text), public.unlink_physio(),
   public.remove_patient(uuid), public.delete_my_account() from public, anon;
 grant execute on function public.link_physio(text), public.unlink_physio(),
   public.remove_patient(uuid), public.delete_my_account() to authenticated;
+
+-- Rende admin un account già registrato (solo dal SQL Editor, non dall'app).
+-- L'admin diventa fisioterapista, riceve un codice studio e risulta paziente di se stesso:
+-- così può assegnarsi esercizi e provare entrambe le viste con un solo account.
+create or replace function public.make_admin(p_email text) returns text
+language plpgsql security definer set search_path = public as $$
+declare pr public.profiles; c text;
+begin
+  select * into pr from public.profiles where lower(email) = lower(trim(p_email));
+  if not found then raise exception 'Nessun account con email %: registrati prima nell''app', p_email; end if;
+  c := pr.code;
+  if c is null then
+    loop
+      c := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
+      exit when not exists (select 1 from public.profiles where code = c);
+    end loop;
+  end if;
+  update public.profiles set is_admin = true, role = 'physio', code = c, physio_id = coalesce(physio_id, id) where id = pr.id;
+  return 'Admin attivo per ' || pr.email || ' · codice studio ' || c;
+end $$;
+revoke execute on function public.make_admin(text) from public, anon, authenticated;
 
 -- ---------- Archivio video (privato) ----------
 -- Ogni fisio carica nella cartella che ha il suo id. Limite 50 MB a video
