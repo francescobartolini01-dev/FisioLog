@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FisioLog · Esercizi a casa, progressi in studio</title>
+<meta name="description" content="Il fisioterapista assegna gli esercizi con spiegazione e video, il paziente li registra a casa con dolore e sensazioni.">
+<meta name="theme-color" content="#F3F8FC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A1C33" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FisioLog">
+<script>try{var th=localStorage.getItem("fisiolog-theme");if(th==="dark"||th==="light"){document.documentElement.dataset.theme=th;document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.content=th==="dark"?"#0A1C33":"#F3F8FC"})}}catch(e){}</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- Apertura: l'anello si chiude, l'articolazione si piega -->
+<div id="splash" role="img" aria-label="FisioLog">
+  <div class="sp-in">
+    <svg class="sp-logo" viewBox="0 0 200 200" aria-hidden="true">
+      <circle class="sp-glow" cx="100" cy="100" r="96" fill="none" stroke="#7CC8EE" stroke-width="2"/>
+      <circle cx="100" cy="100" r="92" fill="#11284A"/>
+      <circle class="sp-track" cx="100" cy="100" r="78" fill="none" stroke="#7CC8EE" stroke-opacity=".22" stroke-width="9"/>
+      <circle class="sp-ring" cx="100" cy="100" r="78" fill="none" stroke="#7CC8EE" stroke-width="9" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+      <path class="sp-a" d="M60 78 L100 118" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+      <g class="sp-b"><path d="M100 118 L140 92" stroke="#7CC8EE" stroke-width="16" stroke-linecap="round"/></g>
+      <circle class="sp-j" cx="100" cy="118" r="13" fill="#11284A" stroke="#FFFFFF" stroke-width="5"/>
+      <path class="sp-rom" d="M76 132 A34 34 0 0 0 128 138" fill="none" stroke="#7CC8EE" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 9"/>
+    </svg>
+    <div class="sp-word" aria-hidden="true">Fisio<span>Log</span></div>
+    <p class="sp-tag">Esercizi a casa · <b>Progressi in studio</b></p>
+  </div>
+  <p class="sp-skip">Tocca per entrare</p>
+</div>
+<script>
+document.documentElement.classList.add("splashing");
+(function(){var sp=document.getElementById("splash"),gone=false;
+  function go(){if(gone)return;gone=true;sp.classList.add("bye");document.documentElement.classList.remove("splashing");setTimeout(function(){sp.remove()},600)}
+  var rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(go,rm?400:2000);sp.addEventListener("click",go);
+})();
+</script>
+
+<header class="top">
+  <div class="topin">
+    <a class="brand" href="#/" aria-label="FisioLog, vai all'inizio"><img src="/logo-animated.svg" alt="" width="36" height="36"><span>Fisio<b>Log</b></span></a>
+    <div class="topr"><span id="status" class="small muted" aria-live="polite"></span><button class="iconbtn" id="themeBtn" type="button"></button></div>
+  </div>
+</header>
+<nav id="nav" class="nav" aria-label="Sezioni"></nav>
+<main id="app" class="wrap"><div class="loading">Caricamento…</div></main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="/config.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
