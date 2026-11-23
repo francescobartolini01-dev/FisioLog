@@ -4,6 +4,6 @@
 // Queste due righe si possono pubblicare su GitHub: i dati restano protetti dalle regole
 // create con supabase.sql. Non mettere MAI qui la chiave "secret" o "service_role".
 window.FISIOLOG_SUPABASE = {
-  url: "",
-  key: ""
+  url: "https://swniqjbpicvknvwadpws.supabase.co",
+  key: "sb_publishable_BFshio4MJNzXD5bPefODFQ_nE4Ef7kV"
 };
